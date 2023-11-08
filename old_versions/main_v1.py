@@ -1,6 +1,6 @@
 import os
-import get_property_info, initial_search
-from helper_funcs import link_to_id
+from old_versions import get_property_info, initial_search
+from helper_funcs import openrent_link_to_id
 from notifications import notify
 import pickle
 from pathlib import Path
@@ -20,7 +20,7 @@ max_properties = initial_search.get_initial_num_properties(url, delay_time=4)
 links = initial_search.get_available_properties(url, max_num=max_properties)
 
 for i in range(5):
-    property_id = link_to_id(links[i])
+    property_id = openrent_link_to_id(links[i])
 
     # Get the property details from OpenRent
     property_details = get_property_info.get_property_details(property_id)

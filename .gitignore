@@ -1,2 +1,6 @@
 saved_properties/
 .idea/
+saved_properties.db
+/old_versions/
+.DS_Store
+__pycache__/
