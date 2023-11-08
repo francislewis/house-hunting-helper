@@ -3,10 +3,8 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium import webdriver
 from bs4 import BeautifulSoup
 import time
-from helper_funcs import preprocess, id_to_link
+from helper_funcs import preprocess, openrent_id_to_link
 import dateparser
-from urllib.parse import urlencode
-
 
 ###################### Functions to extract specific features to filter by ######################
 for i in range(1):
@@ -104,6 +102,30 @@ for i in range(1):
             return smoking
 
 
+    def has_parking(features):
+        has_parking = [x[1] for x in features if x[0] == "Parking"]
+        if has_parking:
+            parking = None
+            if has_parking[0] == "yes":
+                parking = True
+            elif has_parking[0] == "no":
+                parking = False
+
+            return parking
+
+
+    def has_fireplace(features):
+        has_fireplace = [x[1] for x in features if x[0] == "Parking"]
+        if has_fireplace:
+            fireplace = None
+            if has_fireplace[0] == "yes":
+                fireplace = True
+            elif has_fireplace[0] == "no":
+                fireplace = False
+
+            return fireplace
+
+
     def families_allowed(features):
         family_friendly = [x[1] for x in features if x[0] == "Families Allowed"]
         if family_friendly:
@@ -145,30 +167,12 @@ for i in range(1):
         if deposit:
             return deposit[0]
 
-
     # TODO: could maybe streamline this feature gathering process and put it into a single method which populates a dict
 
-    # def populate_features(prop, features):
-    #     """
-    #
-    #     :param prop: dict containing info for property
-    #     :param features:
-    #     :return:
-    #     """
-    #     garden_found = [x[1] for x in features if x[0] == "Garden"]
-    #     if garden_found:
-    #         has_garden = None
-    #         if garden_found[0] == "yes":
-    #             has_garden = True
-    #         elif garden_found[0] == "no":
-    #             has_garden = False
-    #
-    #         return has_garden
 
 ###################### Main Function ######################
-
 def get_property_details(property_id):
-    url = id_to_link(property_id)
+    url = openrent_id_to_link(property_id)
     print(f'Gathering information on: {url}')
 
     # Start browser
@@ -201,33 +205,20 @@ def get_property_details(property_id):
     location = parse_location_table(soup)
     features = parse_feature_table(soup)
 
-    prop = {'id': property_id, 'title': get_title(soup), 'location': location, 'price': price, 'description': desc,
-            'available_from': available_from(features), 'EPC': EPC_rating(features), 'has_garden': has_garden(features),
-            'Student Friendly': student_allowed(features), 'Furnishing': furnished(features),
-            'Families Allowed': families_allowed(features), 'Pets Allowed': pets_allowed(features),
-            'Smoking Allowed': smoking_allowed(features), 'Deposit': deposit_amount(features),
-            'Minimum Tenancy': min_let(features), 'Bills Included': bills_included(features), 'Notified': False}
+    or_prop = {'id': property_id, 'title': get_title(soup),
+               'location': str(get_title(soup)).split(',')[-2] + str(get_title(soup)).split(',')[-1],
+               'platform_location': location, 'price': price, 'description': desc,
+               'available_from': available_from(features), 'EPC': EPC_rating(features),
+               'has_garden': has_garden(features),
+               'Student Friendly': student_allowed(features), 'Furnishing': furnished(features),
+               'Families Allowed': families_allowed(features), 'Pets Allowed': pets_allowed(features),
+               'Smoking Allowed': smoking_allowed(features), 'Deposit': deposit_amount(features),
+               'Minimum Tenancy': min_let(features), 'Bills Included': bills_included(features),
+               'nearest_station': location[0][0], 'Notified': False, 'link': openrent_id_to_link(property_id),
+               'Fireplace': has_fireplace(features), 'Parking': has_parking(features), 'platform': 'openrent'}
 
     print('Completed information gathering on listing')
-    return prop
+    return or_prop
 
 # TODO: could add google maps link, would be nicer to do by js clicking on elements though and getting proper link
 
-# def directions_link(prop):
-#     def maps_link(start_addr, end_addr):
-#         query_string = urlencode(
-#             OrderedDict(f="d",
-#                         saddr=start_addr,
-#                         daddr=end_addr,
-#                         dirflg="r"))
-#
-#         return "http://maps.google.co.uk/?%s" % query_string
-#
-#     start_addr = ",".join(prop['title'].split(",")[1:])
-#
-#     return "Directions <{}|to {}>".format(
-#         maps_link(start_addr, work_addr1), work_addr1)
-# print(directions_link(prop))
-
-# testing
-# get_property_details(property_id = 1874378)

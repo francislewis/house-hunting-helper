@@ -9,8 +9,11 @@ def preprocess(soup):
         if tick.text == "":
             tick.string = "no"
 
-def id_to_link(property_id):
+def openrent_id_to_link(property_id):
     return ("https://www.openrent.co.uk/%s" % property_id)
 
-def link_to_id(url):
+def openrent_link_to_id(url):
     return url.split('/')[-1]
+
+def spareroom_id_to_link(property_id):
+    return ("https://www.spareroom.co.uk/%s" % property_id)
