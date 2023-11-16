@@ -4,6 +4,10 @@ Acknowledgements:
 - OpenRent Scraping modified from: [afiodorov/openrent](https://github.com/afiodorov/openrent)
 - SpareRoom Scraping modified from: [eonlight/roomfinder](hhttps://github.com/eonlight/roomfinder)
 
+Re-structure plan:
+- Class for each platform with some set methods
+- Unit tests for each method (with valid response and invalid response)
+
 To-Do:
 - Add notifications (email/trello/slack etc.)
 
