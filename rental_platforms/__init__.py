@@ -36,39 +36,43 @@ class RentalPlatform():
         else:
             self.short_term_ok = False
 
-        # Search preferences should be saved as local variables within the object
+        # Search preferences should be saved as local variables within the object,
+        # results should be saved in self.results as a dict of dict, with a copy of self.final_property_details per id
 
-        # # Dict for the final results to ensure consistency
-        # self.final_property_details = {'id': 'unknown',
-        #                           'title': 'unknown',
-        #                           'price': 'unknown',
-        #                           'deposit': 'unknown',
-        #                           'bills_included': 'unknown',
-        #                           'min_tenancy': 'unknown',
-        #                           'description': 'unknown',
-        #                           'available_from': 'unknown',
-        #                           'general_location': 'unknown',
-        #                           'exact_location': 'unknown',
-        #                           'nearest_station': 'unknown',
-        #                           'tube_zone': 'unknown',
-        #                           'furnishing': 'unknown',
-        #                           'epc': 'unknown',
-        #                           'has_garden': 'unknown',
-        #                           'couples': 'unknown',
-        #                           'student_friendly': 'unknown',
-        #                           'dss': 'unknown',
-        #                           'families_allowed': 'unknown',
-        #                           'smoking_allowed': 'unknown',
-        #                           'fireplace': 'unknown',
-        #                           'parking': 'unknown',
-        #                           'rental_platforms': 'unknown',
-        #                           'last_updated': 'unknown',
-        #                           'posted': 'unknown',
-        #                           'url': 'unknown',
-        #                           'image_url': 'unknown',
-        #                           'video_viewings': 'unknown',
-        #                           'room_type': 'unknown',
-        #                           }
+        # Dict for the final results to ensure consistency
+        self.final_property_details = {'id': 'unknown',
+                                  'title': 'unknown',
+                                  'price': 'unknown',
+                                  'deposit': 'unknown',
+                                  'bills_included': 'unknown',
+                                  'min_tenancy': 'unknown',
+                                  'description': 'unknown',
+                                  'available_from': 'unknown',
+                                  'general_location': 'unknown',
+                                  'exact_location': 'unknown',
+                                  'nearest_station': 'unknown',
+                                  'tube_zone': 'unknown',
+                                  'furnishing': 'unknown',
+                                  'epc': 'unknown',
+                                  'has_garden': 'unknown',
+                                  'couples': 'unknown',
+                                  'student_friendly': 'unknown',
+                                  'dss': 'unknown',
+                                  'families_allowed': 'unknown',
+                                  'smoking_allowed': 'unknown',
+                                  'fireplace': 'unknown',
+                                  'parking': 'unknown',
+                                  'rental_platforms': 'unknown',
+                                  'last_updated': 'unknown',
+                                  'posted': 'unknown',
+                                  'url': 'unknown',
+                                  'image_url': 'unknown',
+                                  'video_viewings': 'unknown',
+                                  'room_type': 'unknown',
+                                  'bedrooms': 'unknown',
+                                  'bathrooms': 'unknown',
+                                  'pets': 'unknown'
+                                  }
 
 
     def save(self, results):

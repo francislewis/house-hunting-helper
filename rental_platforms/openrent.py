@@ -149,28 +149,21 @@ class OpenRent(RentalPlatform):
         for property_id in list(self.search_results.keys()):
             current_property = self.search_results[property_id]
             if current_property['islivelistBool'] == 1:
+                self.results[property_id] = self.final_property_details.copy()
                 self.results[property_id] = {'id': property_id,
                                              'title': current_property['title'],
                                              'price': current_property['prices'],
-                                             'deposit': 'unknown',
                                              'bills_included': str(bool(current_property['bills'])),
                                              'min_tenancy': current_property['minimumTenancy'],
                                              'description': current_property['description'],
                                              'available_from': (datetime.datetime.now() - datetime.timedelta(
                                                  days=current_property['availableFrom'])).strftime(
                                                  '%m-%d-%Y %H:%M:%S.%f'),
-                                             'general_location': 'unknown',
                                              'exact_location': f"{current_property['PROPERTYLISTLATITUDES']}, {current_property['PROPERTYLISTLONGITUDES']}",
-                                             'nearest_station': 'unknown',
-                                             'tube_zone': 'unknown',
                                              'furnishing': str(bool(current_property['furnished'])),
-                                             'epc': 'unknown',
                                              'has_garden': str(bool(current_property['gardens'])),
-                                             'couples': 'unknown',
                                              'student_friendly': str(bool(current_property['students'])),
                                              'dss': str(bool(current_property['dss'])),
-                                             'families_allowed': 'unknown',
-                                             'smoking_allowed': 'unknown',
                                              'fireplace': str(bool(current_property['fireplaces'])),
                                              'parking': str(bool(current_property['parkings'])),
                                              'rental_platforms': 'openrent',

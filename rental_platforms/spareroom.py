@@ -7,10 +7,6 @@ import json
 from urllib.parse import urlencode
 from helper_funcs import spareroom_id_to_link
 
-def make_get_request(url=None, headers=None, cookies=None, sleep_time=0.1):
-    sleep(sleep_time)
-    return requests.get(url, cookies=cookies, headers=headers).text
-
 class SpareRoom(RentalPlatform):
     def __init__(self, all_preferences):
         # Process preferences that are shared between all platforms
@@ -56,9 +52,9 @@ class SpareRoom(RentalPlatform):
                                                           endpoint=self.api_search_endpoint,
                                                           params=urlencode(self.search_params))
             try:
-                results = json.loads(make_get_request(url=url,
+                results = json.loads(requests.get(url=url,
                                                       cookies=self.cookies,
-                                                      headers=self.headers))
+                                                      headers=self.headers).text)
 
                 for room in results['results']:
                     # print(f'room: {room}')
@@ -82,11 +78,11 @@ class SpareRoom(RentalPlatform):
         """
         # Get the total pages from the api response
         try:
-            total_pages = json.loads(make_get_request(url='{location}/{endpoint}?{params}'.format(location=self.api_location,
+            total_pages = json.loads(requests.get(url='{location}/{endpoint}?{params}'.format(location=self.api_location,
                                                                                                   endpoint=self.api_search_endpoint,
                                                                                                   params=urlencode(
                                                                                                       self.search_params)),
-                                                      cookies=self.cookies, headers=self.headers))['pages']
+                                                      cookies=self.cookies, headers=self.headers).text)['pages']
         except KeyError:
             total_pages = 1
 
@@ -97,38 +93,8 @@ class SpareRoom(RentalPlatform):
             self.pages_left = total_pages
 
     def process_features(self, api_result):
-        final_property_details = {'id': 'unknown',
-                                  'title': 'unknown',
-                                  'price': 'unknown',
-                                  'deposit': 'unknown',
-                                  'bills_included': 'unknown',
-                                  'min_tenancy': 'unknown',
-                                  'description': 'unknown',
-                                  'available_from': 'unknown',
-                                  'general_location': 'unknown',
-                                  'exact_location': 'unknown',
-                                  'nearest_station': 'unknown',
-                                  'tube_zone': 'unknown',
-                                  'furnishing': 'unknown',
-                                  'epc': 'unknown',
-                                  'has_garden': 'unknown',
-                                  'student_friendly': 'unknown',
-                                  'dss': 'unknown',
-                                  'families_allowed': 'unknown',
-                                  'smoking_allowed': 'unknown',
-                                  'fireplace': 'unknown',
-                                  'parking': 'unknown',
-                                  'platform': 'unknown',
-                                  'last_updated': 'unknown',
-                                  'posted': 'unknown',
-                                  'url': 'unknown',
-                                  'image_url': 'unknown',
-                                  'video_viewings': 'unknown',
-                                  'room_type': 'unknown',
-                                  'bedrooms': 'unknown',
-                                  'bathrooms': 'unknown',
-                                  'pets': 'unknown'
-                                  }
+        final_property_details = self.final_property_details.copy()
+
         try:
             final_property_details['id'] = api_result['advert_id']
             final_property_details['title'] = api_result['ad_title']
