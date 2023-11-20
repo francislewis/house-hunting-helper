@@ -32,7 +32,7 @@ def initalise_db():
                     link TEXT,
                     fireplace BOOLEAN,
                     parking BOOLEAN,
-                    platform TEXT
+                    rental_platforms TEXT
                 )
             ''')
 
@@ -86,7 +86,7 @@ def write_property_details_to_db(prop):
                 link TEXT,
                 fireplace BOOLEAN,
                 parking BOOLEAN,
-                platform TEXT
+                rental_platforms TEXT
             )
         ''')
 
@@ -96,7 +96,7 @@ def write_property_details_to_db(prop):
                 id, title, location, platform_location, price, description, available_from, EPC,
                 has_garden, student_friendly, furnishing, families_allowed,
                 pets_allowed, smoking_allowed, deposit, min_tenancy, bills_included, nearest_station, 
-                notified, link, fireplace, parking, platform
+                notified, link, fireplace, parking, rental_platforms
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
@@ -107,7 +107,7 @@ def write_property_details_to_db(prop):
             int(prop['Pets Allowed']), int(prop['Smoking Allowed']), prop['Deposit'],
             prop['Minimum Tenancy'], int(prop['Bills Included']), str(prop['nearest_station']),
             (prop['Notified']), str(prop['link']), int(prop['Fireplace']), int(prop['Parking']),
-            str(prop['platform'])
+            str(prop['rental_platforms'])
         ))
 
         # Commit the changes
@@ -172,7 +172,7 @@ def fetch_property_details_from_db(property_id):
         'link': result[19],
         'fireplace': bool(result[20]),
         'parking': bool(result[21]),
-        'platform': result[22]
+        'rental_platforms': result[22]
     }
 
     return prop
@@ -227,7 +227,7 @@ def get_unnotified_property_ids():
 
     # Fetch IDs of properties with notified set to False
     cursor.execute('''
-        SELECT id, platform FROM properties WHERE notified = 0
+        SELECT id, rental_platforms FROM properties WHERE notified = 0
     ''')
 
     # Retrieve the results
