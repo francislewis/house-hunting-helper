@@ -1,5 +1,6 @@
 from rental_platforms.spareroom import SpareRoom
 from rental_platforms.openrent import OpenRent
+from ranking import rank
 
 preferences = {
     'location': 'Southwark',
@@ -16,4 +17,7 @@ o = OpenRent(preferences)
 s = SpareRoom(preferences)
 o.main()
 s.main()
+
+rank()
+
 

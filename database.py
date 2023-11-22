@@ -168,3 +168,66 @@ class SQLiteDatabase:
 
         # Extract the IDs from the results and return as a list
         return [result[0] for result in results]
+
+    def get_position(self, id, values=['price', 'time_to_work_pub_trans'], table_name='properties'):
+
+        conn = sqlite3.connect(self.file_path)
+        cursor = conn.cursor()
+
+        results = {}
+
+        for value in values:
+
+            query = f'''
+                SELECT position
+                FROM (
+                    SELECT id, ROW_NUMBER() OVER (ORDER BY {value}) AS position
+                    FROM {table_name}
+                ) AS ranked
+                WHERE id = ?;
+            '''
+
+            cursor.execute(query, (id,))
+            result = cursor.fetchone()
+
+            if result:
+                position = result[0]
+                results[value] = position
+            else:
+                print(f"No row found with id {id}")
+
+        conn.close()
+
+        return results
+
+    def get_entry_count(self, table_name='properties'):
+        conn = sqlite3.connect(self.file_path)
+        cursor = conn.cursor()
+
+        query = f'SELECT COUNT(*) FROM {table_name};'
+        cursor.execute(query)
+
+        count = cursor.fetchone()[0]
+
+        conn.close()
+
+        return count
+
+
+    def update_column_by_id(self, id, column_name, new_value, table_name='properties'):
+        conn = sqlite3.connect(self.file_path)
+        cursor = conn.cursor()
+
+        query = f'UPDATE {table_name} SET {column_name} = ? WHERE id = ?;'
+        cursor.execute(query, (new_value, id))
+
+        # Commit the changes
+        conn.commit()
+
+        print(f'Column "{column_name}" updated for row with id {id}.')
+
+        conn.close()
+
+
+
+
