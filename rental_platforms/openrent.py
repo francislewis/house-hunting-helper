@@ -1,12 +1,11 @@
 from rental_platforms import RentalPlatform
 import requests
-import json
 import datetime
 import re
 from bs4 import BeautifulSoup
 from collections import OrderedDict
 from urllib.parse import urlencode
-from helper_funcs import openrent_id_to_link
+from helper_funcs import openrent_id_to_link, google_maps_link, get_commute_time_tfl
 
 
 class OpenRent(RentalPlatform):
@@ -21,7 +20,7 @@ class OpenRent(RentalPlatform):
         :return:
         """
         query_string = urlencode(
-            OrderedDict(term=preferences['location'],
+            OrderedDict(term=self.location,
                         within=str(int(self.distance)),
                         prices_min=int(self.min_beds),
                         prices_max=int(self.max_price),
@@ -111,16 +110,16 @@ class OpenRent(RentalPlatform):
         for property_id in self.property_ids:
             # The initial search is quite general, so first we filter down and remove ones that don't meet preferences
             # TODO: maybe make a method somewhere else in which certain preferences can be dealbreakers and some are ranked etc
-            if self.search_results[property_id]['prices'] > preferences['max_price']:
+            if self.search_results[property_id]['prices'] > self.max_price:
                 del self.search_results[property_id]
 
-            elif self.search_results[property_id]['prices'] < preferences['min_price']:
+            elif self.search_results[property_id]['prices'] < self.min_price:
                 del self.search_results[property_id]
 
-            elif self.search_results[property_id]['bedrooms'] > preferences['max_beds']:
+            elif self.search_results[property_id]['bedrooms'] > self.max_beds:
                 del self.search_results[property_id]
 
-            elif self.search_results[property_id]['bedrooms'] < preferences['min_beds']:
+            elif self.search_results[property_id]['bedrooms'] < self.min_beds:
                 del self.search_results[property_id]
 
             # TODO: can use this to try filter out agents who worm their way in
@@ -150,34 +149,37 @@ class OpenRent(RentalPlatform):
             current_property = self.search_results[property_id]
             if current_property['islivelistBool'] == 1:
                 self.results[property_id] = self.final_property_details.copy()
-                self.results[property_id] = {'id': property_id,
-                                             'title': current_property['title'],
-                                             'price': current_property['prices'],
-                                             'bills_included': str(bool(current_property['bills'])),
-                                             'min_tenancy': current_property['minimumTenancy'],
-                                             'description': current_property['description'],
-                                             'available_from': (datetime.datetime.now() - datetime.timedelta(
-                                                 days=current_property['availableFrom'])).strftime(
-                                                 '%m-%d-%Y %H:%M:%S.%f'),
-                                             'exact_location': f"{current_property['PROPERTYLISTLATITUDES']}, {current_property['PROPERTYLISTLONGITUDES']}",
-                                             'furnishing': str(bool(current_property['furnished'])),
-                                             'has_garden': str(bool(current_property['gardens'])),
-                                             'student_friendly': str(bool(current_property['students'])),
-                                             'dss': str(bool(current_property['dss'])),
-                                             'fireplace': str(bool(current_property['fireplaces'])),
-                                             'parking': str(bool(current_property['parkings'])),
-                                             'rental_platforms': 'openrent',
-                                             'last_updated': current_property['lastupdated'],
-                                             'posted': (datetime.datetime.now() - datetime.timedelta(
-                                                 hours=current_property['hoursLive'])).strftime('%m-%d-%Y %H:%M:%S.%f'),
-                                             'url': openrent_id_to_link(property_id),
-                                             'image_url': current_property['imageurl'],
-                                             'video_viewings': str(bool(current_property['videoViewingsAccepted'])),
-                                             'room_type': current_property['propertyTypes'],
-                                             'bedrooms': current_property['bedrooms'],
-                                             'bathrooms': current_property['bathrooms'],
-                                             'pets': str(bool(current_property['pets']))
-                                             }
+
+                self.results[property_id]['id'] = property_id
+                self.results[property_id]['title'] = current_property['title']
+                self.results[property_id]['price'] = current_property['prices']
+                self.results[property_id]['bills_included'] = str(bool(current_property['bills']))
+                self.results[property_id]['min_tenancy'] = current_property['minimumTenancy']
+                self.results[property_id]['description'] = current_property['description']
+                self.results[property_id]['available_from'] = (datetime.datetime.now() - datetime.timedelta(
+                    days=current_property['availableFrom'])).strftime(
+                    '%m-%d-%Y %H:%M:%S.%f')
+                self.results[property_id][
+                    'exact_location'] = f"{current_property['PROPERTYLISTLATITUDES']}, {current_property['PROPERTYLISTLONGITUDES']}".replace(' ', '')[:-1]
+                self.results[property_id]['google_maps_link'] = google_maps_link( self.results[property_id]['exact_location'])
+                self.results[property_id]['time_to_work_pub_trans'] = get_commute_time_tfl(start_loc= self.results[property_id]['exact_location'], end_loc=self.work_location)
+                self.results[property_id]['furnishing'] = str(bool(current_property['furnished']))
+                self.results[property_id]['has_garden'] = str(bool(current_property['gardens']))
+                self.results[property_id]['student_friendly'] = str(bool(current_property['students']))
+                self.results[property_id]['dss'] = str(bool(current_property['dss']))
+                self.results[property_id]['fireplace'] = str(bool(current_property['fireplaces']))
+                self.results[property_id]['parking'] = str(bool(current_property['parkings']))
+                self.results[property_id]['platform'] = 'openrent'
+                self.results[property_id]['last_updated'] = current_property['lastupdated']
+                self.results[property_id]['posted'] = (datetime.datetime.now() - datetime.timedelta(
+                    hours=current_property['hoursLive'])).strftime('%m-%d-%Y %H:%M:%S.%f')
+                self.results[property_id]['url'] = openrent_id_to_link(property_id)
+                self.results[property_id]['image_url'] = current_property['imageurl']
+                self.results[property_id]['video_viewings'] = str(bool(current_property['videoViewingsAccepted']))
+                self.results[property_id]['room_type'] = current_property['propertyTypes']
+                self.results[property_id]['bedrooms'] = current_property['bedrooms']
+                self.results[property_id]['bathrooms'] = current_property['bathrooms']
+                self.results[property_id]['pets'] = str(bool(current_property['pets']))
 
     def main(self):
         self.initial_search()
@@ -185,17 +187,16 @@ class OpenRent(RentalPlatform):
         self.create_final_results()
         self.save(self.results)
 
-
-# Test
-preferences = {
-    'location': 'Southwark',
-    'distance': 3,
-    'min_price': 600,
-    'max_price': 2000,
-    'min_beds': 1,
-    'max_beds': 1,
-    'short_term_ok': False
-}
-
-o = OpenRent(preferences)
-o.main()
+# # Test
+# preferences = {
+#     'location': 'Southwark',
+#     'distance': 3,
+#     'min_price': 600,
+#     'max_price': 2000,
+#     'min_beds': 1,
+#     'max_beds': 1,
+#     'short_term_ok': False
+# }
+#
+# o = OpenRent(preferences)
+# o.main()

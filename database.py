@@ -1,243 +1,170 @@
 import sqlite3
 
-def initalise_db():
-    # Connect to a database (or create it if it doesn't exist)
-    conn = sqlite3.connect('saved_properties.db')
 
-    # Create a cursor object to interact with the database
-    cursor = conn.cursor()
-
-    # Create a table for properties
-    cursor.execute('''
-                CREATE TABLE IF NOT EXISTS properties (
-                    id INTEGER PRIMARY KEY,
-                    title TEXT NOT NULL,
-                    location TEXT,
-                    platform_location TEXT,
-                    price REAL,
-                    description TEXT,
-                    available_from TEXT,
-                    EPC TEXT,
-                    has_garden BOOLEAN,
-                    student_friendly BOOLEAN,
-                    furnishing TEXT,
-                    families_allowed BOOLEAN,
-                    pets_allowed BOOLEAN,
-                    smoking_allowed BOOLEAN,
-                    deposit REAL,
-                    min_tenancy TEXT,
-                    bills_included BOOLEAN,
-                    nearest_station TEXT,
-                    notified BOOLEAN,
-                    link TEXT,
-                    fireplace BOOLEAN,
-                    parking BOOLEAN,
-                    rental_platforms TEXT
-                )
-            ''')
-
-    # Commit the changes
-    conn.commit()
-
-    # Close the cursor and connection
-    cursor.close()
-    conn.close()
-
-def write_property_details_to_db(prop):
+class SQLiteDatabase:
     """
-    Write a dict of details (for a single property) to a SQLite database located in saved_properties/database.db
-    :param prop: dict of property details
-    :return:
+    SQLite Database Class. Each object can be attached to a single database file/location.
     """
-    if prop is None:
-        print('Error with page')
-        return 0
-    # Check entry for id doesn't already exist:
-    if not does_row_exist(prop['id']):
+    def __init__(self, empty_results_dict, table_name='properties', file_path='saved_properties.db'):
+        self.file_path =file_path
+        self.initalise_db_table(empty_results_dict, table_name)
 
+    def initalise_db_table(self, empty_results_dict, table_name):
         # Connect to a database (or create it if it doesn't exist)
-        conn = sqlite3.connect('saved_properties.db')
+        conn = sqlite3.connect(self.file_path)
 
-        # Create a cursor object to interact with the database
+        # Create a cursor to interact with the database
         cursor = conn.cursor()
 
-        # Create a table for properties
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS properties (
-                id INTEGER PRIMARY KEY,
-                title TEXT NOT NULL,
-                location TEXT,
-                platform_location TEXT,
-                price REAL,
-                description TEXT,
-                available_from TEXT,
-                EPC TEXT,
-                has_garden BOOLEAN,
-                student_friendly BOOLEAN,
-                furnishing TEXT,
-                families_allowed BOOLEAN,
-                pets_allowed BOOLEAN,
-                smoking_allowed BOOLEAN,
-                deposit REAL,
-                min_tenancy TEXT,
-                bills_included BOOLEAN,
-                nearest_station TEXT,
-                notified BOOLEAN,
-                link TEXT,
-                fireplace BOOLEAN,
-                parking BOOLEAN,
-                rental_platforms TEXT
-            )
-        ''')
+        # Check to see if table exists
+        cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';")
 
-        # Insert data from the 'prop' dictionary into the 'properties' table
-        cursor.execute('''
-            INSERT INTO properties (
-                id, title, location, platform_location, price, description, available_from, EPC,
-                has_garden, student_friendly, furnishing, families_allowed,
-                pets_allowed, smoking_allowed, deposit, min_tenancy, bills_included, nearest_station, 
-                notified, link, fireplace, parking, rental_platforms
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            prop['id'], prop['title'], str(prop['location']), str(prop['platform_location']),
-            prop['price'], prop['description'],
-            prop['available_from'], prop['EPC'], int(prop['has_garden']),
-            int(prop['Student Friendly']), prop['Furnishing'], int(prop['Families Allowed']),
-            int(prop['Pets Allowed']), int(prop['Smoking Allowed']), prop['Deposit'],
-            prop['Minimum Tenancy'], int(prop['Bills Included']), str(prop['nearest_station']),
-            (prop['Notified']), str(prop['link']), int(prop['Fireplace']), int(prop['Parking']),
-            str(prop['rental_platforms'])
-        ))
+        # If it exists, do nothing
+        if cursor.fetchone():
+            pass
 
-        # Commit the changes
+        # If it doesn't exist, create table
+        else:
+            # Extract column names and data types from the dictionary
+            columns = ', '.join(f'{key} TEXT' for key in empty_results_dict.keys())
+
+            # Create the table
+            create_table_query = f'CREATE TABLE IF NOT EXISTS {table_name} ({columns});'
+            cursor.execute(create_table_query)
+
+        # Commit the changes and close the connection
         conn.commit()
+        conn.close()
+
+    def insert_data_into_table(self, data_dict, table_name = 'properties'):
+        """
+        Saves a Python dict to an SQLite database table, each key in the dict corresponds to a column heading.
+        This schema is set up on object instantiation - i.e. self.__init__()
+        :param data_dict:
+        :return:
+        """
+        if not self.does_row_exist(data_dict['id'], table_name=table_name):
+            # Connect to the SQLite database
+            conn = sqlite3.connect(self.file_path)
+            cursor = conn.cursor()
+
+            # Generate the query to insert data into the table
+            columns = ', '.join(data_dict.keys())
+
+            # Remove any " characters from the values to ensure the SQL query isn't prematurely escaped
+            disallowed_chars = ['"']
+            values = ', '.join([f'"{str(value).replace(disallowed_chars[0], "")}"' for value in data_dict.values()])
+            insert_query = f'INSERT INTO {table_name} ({columns}) VALUES ({values});'
+
+            # Execute the query
+            cursor.execute(insert_query)
+
+            # Commit the changes and close the connection
+            conn.commit()
+            conn.close()
+
+        else:
+            print('Database entry already exists for this id - skipping')
+
+    def fetch_data_by_id(self, property_id, table_name='properties'):
+        """
+        Fetch a row of data from the SQLite database, returning the row as a dict keyed by column name
+
+        str property_id: id of row to fetch from database
+        str table_name: optional, default = properties, name of table to fetch data from
+        """
+
+        # Connect to the SQLite database
+        conn = sqlite3.connect(self.file_path)
+        cursor = conn.cursor()
+
+        # Create query to select data by ID
+        select_query = f'SELECT * FROM {table_name} WHERE id = {property_id};'
+
+        # Execute the query
+        cursor.execute(select_query)
+
+        # Fetch the result
+        result = cursor.fetchone()
+
+        # Close the database connection
+        conn.close()
+
+        # Convert the result to a dictionary
+        if result:
+            columns = [column[0] for column in cursor.description]
+            data_dict = dict(zip(columns, result))
+            return data_dict
+        else:
+            print(f'Result not found for id: {id}')
+            return None
+
+    def does_row_exist(self, property_id, table_name='properties'):
+        # Connect to the database
+        conn = sqlite3.connect(self.file_path)
+        cursor = conn.cursor()
+
+        # Check if a row with the specified ID exists in the 'properties' table
+        select_query = f'SELECT 1 FROM {table_name} WHERE id = {property_id} LIMIT 1'
+        cursor.execute(select_query)
+
+        # cursor.execute('''
+        #     SELECT 1 FROM properties WHERE id = ? LIMIT 1
+        # ''', (property_id,))
+
+        # Fetch the result
+        result = cursor.fetchone()
 
         # Close the cursor and connection
         cursor.close()
         conn.close()
 
-    else:
-        print('Database entry already exists for this id - skipping')
+        # Return True if a row exists, False otherwise
+        return result is not None
 
+    def get_unnotified_property_ids(self, table_name='properties'):
+        # Connect to the database
+        conn = sqlite3.connect(self.file_path)
+        cursor = conn.cursor()
 
-def fetch_property_details_from_db(property_id):
-    """
-    From a property id, check if it is saved in the SQLite database saved_properties/database.db and if so return a dict
-    of property details from the database row
-    :param property_id:
-    :return:
-    """
-    # Connect to the database
-    conn = sqlite3.connect('saved_properties.db')
-    cursor = conn.cursor()
+        # Fetch IDs of properties with notified set to False
+        select_query = f'SELECT id, rental_platforms FROM {table_name} WHERE notified = 0'
+        cursor.execute(select_query)
 
-    # Fetch property data from the 'properties' table
-    cursor.execute('''
-        SELECT * FROM properties WHERE id = ?
-    ''', (property_id,))
+        # cursor.execute('''
+        #     SELECT id, rental_platforms FROM properties WHERE notified = 0
+        # ''')
 
-    # Retrieve the first result (assuming property_id is unique)
-    result = cursor.fetchone()
+        # Retrieve the results
+        results = cursor.fetchall()
 
-    # Close the cursor and connection
-    cursor.close()
-    conn.close()
+        # Close the cursor and connection
+        cursor.close()
+        conn.close()
 
-    # If no result found, return None
-    if result is None:
-        return None
+        # Extract the IDs from the results and return as a list
+        # return [result[0] for result in results]
+        return results
 
-    # Create a dictionary from the retrieved values
-    prop = {
-        'id': result[0],
-        'title': result[1],
-        'location': result[2],
-        'platform_location': result[3],
-        'price': result[4],
-        'description': result[5],
-        'available_from': result[6],
-        'EPC': result[7],
-        'has_garden': bool(result[8]),
-        'student_friendly': bool(result[9]),
-        'furnishing': result[10],
-        'families_allowed': bool(result[11]),
-        'pets_allowed': bool(result[12]),
-        'smoking_allowed': bool(result[13]),
-        'deposit': result[14],
-        'min_tenancy': result[15],
-        'bills_included': bool(result[16]),
-        'nearest_station': result[17],
-        'notified': bool(result[18]),
-        'link': result[19],
-        'fireplace': bool(result[20]),
-        'parking': bool(result[21]),
-        'rental_platforms': result[22]
-    }
+    def get_all_property_ids(self, table_name='properties'):
+        # Connect to the database
+        conn = sqlite3.connect(self.file_path)
+        cursor = conn.cursor()
 
-    return prop
+        # Fetch all IDs from the table
+        select_query = f'SELECT id from {table_name}'
+        cursor.execute(select_query)
 
+        # cursor.execute('''
+        #     SELECT id FROM properties
+        # ''')
 
-def does_row_exist(property_id):
-    # Connect to the database
-    conn = sqlite3.connect('saved_properties.db')
-    cursor = conn.cursor()
+        # Retrieve the results
+        results = cursor.fetchall()
 
-    # Check if a row with the specified ID exists in the 'properties' table
-    cursor.execute('''
-        SELECT 1 FROM properties WHERE id = ? LIMIT 1
-    ''', (property_id,))
+        # Close the cursor and connection
+        cursor.close()
+        conn.close()
 
-    # Fetch the result
-    result = cursor.fetchone()
-
-    # Close the cursor and connection
-    cursor.close()
-    conn.close()
-
-    # Return True if a row exists, False otherwise
-    return result is not None
-
-
-def get_all_property_ids():
-    # Connect to the database
-    conn = sqlite3.connect('saved_properties.db')
-    cursor = conn.cursor()
-
-    # Fetch all IDs from the 'properties' table
-    cursor.execute('''
-        SELECT id FROM properties
-    ''')
-
-    # Retrieve the results
-    results = cursor.fetchall()
-
-    # Close the cursor and connection
-    cursor.close()
-    conn.close()
-
-    # Extract the IDs from the results and return as a list
-    return [result[0] for result in results]
-
-
-def get_unnotified_property_ids():
-    # Connect to the database
-    conn = sqlite3.connect('saved_properties.db')
-    cursor = conn.cursor()
-
-    # Fetch IDs of properties with notified set to False
-    cursor.execute('''
-        SELECT id, rental_platforms FROM properties WHERE notified = 0
-    ''')
-
-    # Retrieve the results
-    results = cursor.fetchall()
-
-    # Close the cursor and connection
-    cursor.close()
-    conn.close()
-
-    # Extract the IDs from the results and return as a list
-    # return [result[0] for result in results]
-    return results
-
+        # Extract the IDs from the results and return as a list
+        return [result[0] for result in results]
