@@ -8,6 +8,9 @@ from helper_funcs import spareroom_id_to_link, google_maps_link, get_commute_tim
 
 
 class SpareRoom(RentalPlatform):
+    """
+    Class to run searches on the SpareRoom platform
+    """
     def __init__(self, all_preferences):
         # Process preferences that are shared between all platforms
         super().__init__(all_preferences)
@@ -55,10 +58,9 @@ class SpareRoom(RentalPlatform):
                 results = json.loads(requests.get(url=url,
                                                   cookies=self.cookies,
                                                   headers=self.headers).text)
+                print(results)
 
                 for room in results['results']:
-                    # print(f'room: {room}')
-
                     if room['days_of_wk_available'] == '7 days a week':
                         if 'short' in room['ad_title'].lower():
                             if self.short_term_ok:
@@ -79,11 +81,11 @@ class SpareRoom(RentalPlatform):
         # Get the total pages from the api response
         try:
             total_pages = \
-            json.loads(requests.get(url='{location}/{endpoint}?{params}'.format(location=self.api_location,
-                                                                                endpoint=self.api_search_endpoint,
-                                                                                params=urlencode(
-                                                                                    self.search_params)),
-                                    cookies=self.cookies, headers=self.headers).text)['pages']
+                json.loads(requests.get(url='{location}/{endpoint}?{params}'.format(location=self.api_location,
+                                                                                    endpoint=self.api_search_endpoint,
+                                                                                    params=urlencode(
+                                                                                        self.search_params)),
+                                        cookies=self.cookies, headers=self.headers).text)['pages']
         except KeyError:
             total_pages = 1
 
@@ -112,9 +114,12 @@ class SpareRoom(RentalPlatform):
         except (KeyError, TypeError, IndexError):
             pass
         try:
-            final_property_details['exact_location'] = f"{api_result['latitude']}, {api_result['longitude']}".replace(' ', '')[:-1]
+            final_property_details['exact_location'] = f"{api_result['latitude']}, {api_result['longitude']}".replace(
+                ' ', '')[:-1]
             final_property_details['google_maps_link'] = google_maps_link(final_property_details['exact_location'])
-            final_property_details['time_to_work_pub_trans'] = get_commute_time_tfl(start_loc= final_property_details['exact_location'], end_loc=self.work_location)
+            if self.work_location is not None:
+                final_property_details['time_to_work_pub_trans'] = get_commute_time_tfl(
+                    start_loc=final_property_details['exact_location'], end_loc=self.work_location)
         except (KeyError, TypeError, IndexError):
             pass
         try:
@@ -238,15 +243,15 @@ class SpareRoom(RentalPlatform):
         self.get_extra_details()
         self.save(self.results)
 
-# # Test/Example
-# test_preferences = {
-#     'location': 'Southwark',
-#     'distance': 3,
-#     'min_price': 600,
-#     'max_price': 2000,
-#     'min_beds': 1,
-#     'max_beds': 1,
-#     'short_term_ok': False
-# }
-# s = SpareRoom(test_preferences)
-# s.main()
+# Test/Example
+test_preferences = {
+    'location': 'Southwark',
+    'distance': 3,
+    'min_price': 600,
+    'max_price': 2000,
+    'min_beds': 1,
+    'max_beds': 1,
+    'short_term_ok': False
+}
+s = SpareRoom(test_preferences)
+s.main()

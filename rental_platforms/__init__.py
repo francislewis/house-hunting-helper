@@ -43,7 +43,7 @@ class RentalPlatform():
         if 'work_location' in self.all_preferences:
             self.work_location = self.all_preferences['work_location'].replace(' ','')
         else:
-            self.work_location = 'SE18SW'  # London Waterloo Station
+            self.work_location = None  # London Waterloo Station
 
         # Search preferences should be saved as local variables within the object,
         # results should be saved in self.results as a dict of dict, with a copy of self.final_property_details per id
@@ -51,6 +51,9 @@ class RentalPlatform():
         # Save the results dict to self.final_property_details
         self.results_dict()
         self.final_property_details = RentalPlatform.final_property_dict
+
+        # Create database object to save the results to disk
+        self.db = SQLiteDatabase(self.final_property_details)
 
     # Dict for the final results to ensure consistency, @classmethod so this dict can be copied without instantiating
     # an entire RentalPlatform object.
@@ -93,7 +96,10 @@ class RentalPlatform():
                                               'time_to_work_pub_trans': 'unknown',
                                               'time_to_work_cycle': 'unknown',
                                               'notified': 'unknown',
-                                              'ranking': 'unknown'
+                                              'ranking': 'unknown',
+                                              'date_found': 'unknown',
+                                              'available': 'unknown',
+                                              'date_let': 'unknown'
                                               }
 
     def save(self, results):
@@ -102,11 +108,19 @@ class RentalPlatform():
         :param results:
         :return:
         """
-        db = SQLiteDatabase(self.final_property_details)
 
         for id in results:
-            db.insert_data_into_table(results[id])
+            self.db.insert_data_into_table(results[id])
         # TODO: maybe try mongodb? could also keep SQLite option as it's more compatible?
+
+    def check_exists(self, property_id):
+        """
+        Check if a row exists in attached database object, return boolean
+
+        :param property_id: str of key/id of row to check
+        :return: bool
+        """
+        return self.db.does_row_exist(property_id)
 
     def main(self):
         pass

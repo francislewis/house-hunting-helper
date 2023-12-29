@@ -8,6 +8,10 @@ To-Do:
 - add unit tests (can test with both valid/invalid api/json responses to ensure it's safe)
 - Add notifications (email/trello/slack etc.)
 - Some work is needed on consistent types/structure of values being written to the db, since they have to be consistent across platforms in order for the ranking to be effective
+- Being able to track historic prices would be good, but only if we have prior info
+  - The use case here is gathering data on which properties get let very quickly (proxy for desirable property)
+    - Could do some ML stuff with enough data
+  - Instead of only finding available properties, if a property is unavailable, first check to see if we have a previous db entry for it, if so then save it with the date it was let
 
 Improvements:
 - Add RightMove:

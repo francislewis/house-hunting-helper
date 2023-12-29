@@ -19,14 +19,22 @@ class OpenRent(RentalPlatform):
         saving them in self.search_results()
         :return:
         """
+        # query_string = urlencode(
+        #     OrderedDict(term=self.location,
+        #                 within=str(int(self.distance)),
+        #                 prices_min=int(self.min_beds),
+        #                 prices_max=int(self.max_price),
+        #                 bedrooms_min=int(self.min_beds),
+        #                 bedrooms_max=int(self.min_beds),
+        #                 isLive="true"))
+
         query_string = urlencode(
             OrderedDict(term=self.location,
                         within=str(int(self.distance)),
                         prices_min=int(self.min_beds),
                         prices_max=int(self.max_price),
                         bedrooms_min=int(self.min_beds),
-                        bedrooms_max=int(self.min_beds),
-                        isLive="true"))
+                        bedrooms_max=int(self.min_beds)))
 
         url = ("http://www.openrent.co.uk/properties-to-rent/?%s" % query_string)
         r = requests.get(url)
@@ -162,7 +170,8 @@ class OpenRent(RentalPlatform):
                 self.results[property_id][
                     'exact_location'] = f"{current_property['PROPERTYLISTLATITUDES']}, {current_property['PROPERTYLISTLONGITUDES']}".replace(' ', '')[:-1]
                 self.results[property_id]['google_maps_link'] = google_maps_link( self.results[property_id]['exact_location'])
-                self.results[property_id]['time_to_work_pub_trans'] = get_commute_time_tfl(start_loc= self.results[property_id]['exact_location'], end_loc=self.work_location)
+                if self.work_location is not None:
+                    self.results[property_id]['time_to_work_pub_trans'] = get_commute_time_tfl(start_loc= self.results[property_id]['exact_location'], end_loc=self.work_location)
                 self.results[property_id]['furnishing'] = str(bool(current_property['furnished']))
                 self.results[property_id]['has_garden'] = str(bool(current_property['gardens']))
                 self.results[property_id]['student_friendly'] = str(bool(current_property['students']))
@@ -180,6 +189,12 @@ class OpenRent(RentalPlatform):
                 self.results[property_id]['bedrooms'] = current_property['bedrooms']
                 self.results[property_id]['bathrooms'] = current_property['bathrooms']
                 self.results[property_id]['pets'] = str(bool(current_property['pets']))
+
+            elif current_property['islivelistBool'] == 0:
+                pass
+                # TODO: Check if the listing currently exists in the db and write the date it got let if so
+                # Or today's date if this is running on a regular schedule
+
 
     def main(self):
         self.initial_search()

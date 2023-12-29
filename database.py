@@ -10,6 +10,15 @@ class SQLiteDatabase:
         self.initalise_db_table(empty_results_dict, table_name)
 
     def initalise_db_table(self, empty_results_dict, table_name):
+        """
+        Check to see if given table exists within the attached database file (self.file_path)
+        If it doesn't, then create such a table, creating a schema based upon empty_results_dict
+        If it does exist, do nothing
+
+        :param empty_results_dict: dict, keys will be column names
+        :param table_name: name for table in SQLite db file
+        :return:
+        """
         # Connect to a database (or create it if it doesn't exist)
         conn = sqlite3.connect(self.file_path)
 
@@ -100,6 +109,13 @@ class SQLiteDatabase:
             return None
 
     def does_row_exist(self, property_id, table_name='properties'):
+        """
+        Check if a row exists for a certain key/id value. Returns boolean
+
+        :param property_id: str, property_id/primary key in table
+        :param table_name: table name to check
+        :return: boolean
+        """
         # Connect to the database
         conn = sqlite3.connect(self.file_path)
         cursor = conn.cursor()
@@ -123,6 +139,12 @@ class SQLiteDatabase:
         return result is not None
 
     def get_unnotified_property_ids(self, table_name='properties'):
+        """
+        Return a list of property ids/row primary keys that have a value of '0' corresponding to column 'notified'
+
+        :param table_name: optional, name of table to query against
+        :return:
+        """
         # Connect to the database
         conn = sqlite3.connect(self.file_path)
         cursor = conn.cursor()
@@ -147,6 +169,11 @@ class SQLiteDatabase:
         return results
 
     def get_all_property_ids(self, table_name='properties'):
+        """
+        Return a list of all values in column 'id' from SQLite table
+        :param table_name:
+        :return:
+        """
         # Connect to the database
         conn = sqlite3.connect(self.file_path)
         cursor = conn.cursor()
@@ -201,6 +228,11 @@ class SQLiteDatabase:
         return results
 
     def get_entry_count(self, table_name='properties'):
+        """
+        Get total number of entries/rows within a SQLite table
+        :param table_name: name of table within SQLite db
+        :return: count (int)
+        """
         conn = sqlite3.connect(self.file_path)
         cursor = conn.cursor()
 
@@ -211,10 +243,19 @@ class SQLiteDatabase:
 
         conn.close()
 
-        return count
+        return int(count)
 
 
     def update_column_by_id(self, id, column_name, new_value, table_name='properties'):
+        """
+        Update a single value in an SQLite table by specifying the 'id' (row) and 'column_name' (col)
+
+        :param id: id of row entry
+        :param column_name: name of column in which value will be updated
+        :param new_value: value to be written to the db
+        :param table_name: name of table within SQLite db
+        :return:
+        """
         conn = sqlite3.connect(self.file_path)
         cursor = conn.cursor()
 
