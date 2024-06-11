@@ -97,7 +97,9 @@ class RentalPlatform():
                                               'date_found': 'unknown',
                                               'available': 'unknown',
                                               'date_let': 'unknown',
-                                              'full_json': 'unknown'
+                                              'full_json': 'unknown',
+                                              'req_gender': 'unknown',
+                                              'req_occupation': 'unknown'
                                               }
 
     def save(self, results):
