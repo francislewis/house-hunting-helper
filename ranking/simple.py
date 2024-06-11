@@ -20,7 +20,7 @@ class SimpleRank(Ranking):
 
         for id in tqdm(all_ids):
             property_details = db.fetch_data_by_id(id)
-            rank = ((db.get_position(id)['price']/total_entries+ (total_entries-db.get_position(id)['time_to_work_pub_trans'])/total_entries)/2)
+            rank = (db.get_position(id)['price']/total_entries)
 
             if property_details['bills_included'].lower() == 'True':
                 rank = rank * 1.1
