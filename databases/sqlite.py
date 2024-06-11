@@ -1,13 +1,14 @@
+from databases import Database
 import sqlite3
 
-
-class SQLiteDatabase:
+class SQLiteDatabase(Database):
     """
     SQLite Database Class. Each object can be attached to a single database file/location.
     """
-    def __init__(self, empty_results_dict, table_name='properties', file_path='saved_properties.db'):
-        self.file_path =file_path
-        self.initalise_db_table(empty_results_dict, table_name)
+    def __init__(self, empty_results_dict=None, table_name='properties', file_path='saved_properties.db'):
+        self.file_path = file_path
+        if empty_results_dict is not None:
+            self.initalise_db_table(empty_results_dict, table_name)
 
     def initalise_db_table(self, empty_results_dict, table_name):
         """
@@ -196,7 +197,7 @@ class SQLiteDatabase:
         # Extract the IDs from the results and return as a list
         return [result[0] for result in results]
 
-    def get_position(self, id, values=['price', 'time_to_work_pub_trans'], table_name='properties'):
+    def get_position(self, id, values=['price'], table_name='properties'):
 
         conn = sqlite3.connect(self.file_path)
         cursor = conn.cursor()
@@ -265,7 +266,7 @@ class SQLiteDatabase:
         # Commit the changes
         conn.commit()
 
-        print(f'Column "{column_name}" updated for row with id {id}.')
+        # print(f'Column "{column_name}" updated for row with id {id}.')
 
         conn.close()
 

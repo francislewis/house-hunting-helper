@@ -1,13 +1,17 @@
-from database import SQLiteDatabase
+from databases.sqlite import SQLiteDatabase
 
 
 class RentalPlatform():
+    """
+    Components that are shared across every rental platform (openrent, spare room etc.) during scraping/processing
+    """
     final_property_dict = None
 
     def __init__(self, all_preferences):
         self.results = None
         self.search_results = None
         self.property_ids = None
+        self.failed_fields = None
 
         self.all_preferences = all_preferences
 
@@ -40,10 +44,6 @@ class RentalPlatform():
             self.short_term_ok = self.all_preferences['short_term_ok']
         else:
             self.short_term_ok = False
-        if 'work_location' in self.all_preferences:
-            self.work_location = self.all_preferences['work_location'].replace(' ','')
-        else:
-            self.work_location = None  # London Waterloo Station
 
         # Search preferences should be saved as local variables within the object,
         # results should be saved in self.results as a dict of dict, with a copy of self.final_property_details per id
@@ -58,7 +58,7 @@ class RentalPlatform():
     # Dict for the final results to ensure consistency, @classmethod so this dict can be copied without instantiating
     # an entire RentalPlatform object.
     @classmethod
-    def results_dict(self):
+    def results_dict(cls):
         RentalPlatform.final_property_dict = {'id': 'unknown',
                                               'title': 'unknown',
                                               'price': 'unknown',
@@ -92,14 +92,12 @@ class RentalPlatform():
                                               'bedrooms': 'unknown',
                                               'bathrooms': 'unknown',
                                               'pets': 'unknown',
-                                              'work_location': 'unknown',
-                                              'time_to_work_pub_trans': 'unknown',
-                                              'time_to_work_cycle': 'unknown',
                                               'notified': 'unknown',
                                               'ranking': 'unknown',
                                               'date_found': 'unknown',
                                               'available': 'unknown',
-                                              'date_let': 'unknown'
+                                              'date_let': 'unknown',
+                                              'full_json': 'unknown'
                                               }
 
     def save(self, results):
@@ -111,7 +109,6 @@ class RentalPlatform():
 
         for id in results:
             self.db.insert_data_into_table(results[id])
-        # TODO: maybe try mongodb? could also keep SQLite option as it's more compatible?
 
     def check_exists(self, property_id):
         """

@@ -1,11 +1,13 @@
-from rental_platforms import RentalPlatform
+from rental_platform_scrapers import RentalPlatform
 import requests
 import datetime
 import re
+import json
 from bs4 import BeautifulSoup
+from tqdm import tqdm
 from collections import OrderedDict
 from urllib.parse import urlencode
-from helper_funcs import openrent_id_to_link, google_maps_link, get_commute_time_tfl
+from helper_funcs import openrent_id_to_link, google_maps_link, convert_date_to_standard, convert_time_ago_to_datetime
 
 
 class OpenRent(RentalPlatform):
@@ -13,21 +15,13 @@ class OpenRent(RentalPlatform):
         # Process preferences
         super().__init__(all_preferences)
 
-    def initial_search(self):
+    def _initial_search(self):
         """
         This will create a search url from the passed preferences and scrape the results,
         saving them in self.search_results()
         :return:
         """
-        # query_string = urlencode(
-        #     OrderedDict(term=self.location,
-        #                 within=str(int(self.distance)),
-        #                 prices_min=int(self.min_beds),
-        #                 prices_max=int(self.max_price),
-        #                 bedrooms_min=int(self.min_beds),
-        #                 bedrooms_max=int(self.min_beds),
-        #                 isLive="true"))
-
+        print('OPENRENT: Getting initial details')
         query_string = urlencode(
             OrderedDict(term=self.location,
                         within=str(int(self.distance)),
@@ -49,23 +43,21 @@ class OpenRent(RentalPlatform):
         unprocessed_search_results = re.findall(r"var\s(\S+)\s?=\s?(\[[^\]]*\])", search_response)
 
         num_total_properties = int(re.search(r'var NUMBEROFPROPERTIES = (\d+);', search_response).group(1))
+        print(f'OPENRENT: {num_total_properties} properties found')
 
         semi_processed_search_results = {}
 
         for k, v in unprocessed_search_results:
-            same_formatting_1 = ['islivelistBool', 'prices', 'bedrooms', 'bathrooms', 'students', 'nonStudents', 'dss',
+            if k in ['islivelistBool', 'prices', 'bedrooms', 'bathrooms', 'students', 'nonStudents', 'dss',
                                  'pets', 'isstudio', 'isshared', 'furnished', 'unfurnished', 'hasVideo',
-                                 'videoViewingsAccepted', 'propertyTypes', 'hoursLive']
-            same_formatting_2 = ['gardens', 'parkings', 'bills', 'fireplaces', 'availableFrom', 'minimumTenancy']
-
-            if k in same_formatting_1:
+                                 'videoViewingsAccepted', 'propertyTypes', 'hoursLive']:
                 v = v.split(',')
                 v[0] = v[0][3:]
                 v = v[:-1]
                 v = [int(i) for i in v]
                 semi_processed_search_results[k] = v
 
-            elif k in same_formatting_2:
+            elif k in ['gardens', 'parkings', 'bills', 'fireplaces', 'availableFrom', 'minimumTenancy']:
                 v = v[1:-1]
                 v = v.split(',')
                 v = [int(i) for i in v]
@@ -107,15 +99,16 @@ class OpenRent(RentalPlatform):
                 key_values[key] = values_list[i]
             self.search_results[current_id] = key_values
 
-        assert list(self.search_results.keys()) == property_ids, 'Error with search'
+        assert list(self.search_results.keys()) == property_ids, 'Error with initial openrent search'
 
-    def get_extra_details(self):
+    def _get_extra_details(self):
         """
         By utilising an undocumented API, we can get a few extra details for each property
         :return:
         """
+        print('OPENRENT: Getting full details')
         self.property_ids = list(self.search_results.keys())
-        for property_id in self.property_ids:
+        for property_id in tqdm(self.property_ids):
             # The initial search is quite general, so first we filter down and remove ones that don't meet preferences
             # TODO: maybe make a method somewhere else in which certain preferences can be dealbreakers and some are ranked etc
             if self.search_results[property_id]['prices'] > self.max_price:
@@ -138,13 +131,16 @@ class OpenRent(RentalPlatform):
                 endpoint = "https://www.openrent.co.uk/search/propertiesbyid?"
                 extra_info_from_id = requests.get(endpoint, params=[('ids', property_id)]).json()
 
+                # Save the full json result
+                self.search_results[property_id]['full_json'] = str(json.dumps(extra_info_from_id))
+
                 # Save this extra info
                 self.search_results[property_id]['title'] = extra_info_from_id[0]['title']
                 self.search_results[property_id]['description'] = extra_info_from_id[0]['description']
                 self.search_results[property_id]['imageurl'] = extra_info_from_id[0]['imageUrl'][2:]
                 self.search_results[property_id]['lastupdated'] = extra_info_from_id[0]['lastUpdated']
 
-    def create_final_results(self):
+    def _create_final_results(self):
         """
         The name of the keys used in the openrent responses have so far dictated how they are saved in
         self.search_results. But we want to change some of these names, along with the formats of some values in
@@ -155,51 +151,79 @@ class OpenRent(RentalPlatform):
         self.results = {}
         for property_id in list(self.search_results.keys()):
             current_property = self.search_results[property_id]
+            # We are now filling out self.results (the final results), by transforming the data in self.search_results
             if current_property['islivelistBool'] == 1:
                 self.results[property_id] = self.final_property_details.copy()
 
                 self.results[property_id]['id'] = property_id
-                self.results[property_id]['title'] = current_property['title']
-                self.results[property_id]['price'] = current_property['prices']
-                self.results[property_id]['bills_included'] = str(bool(current_property['bills']))
-                self.results[property_id]['min_tenancy'] = current_property['minimumTenancy']
-                self.results[property_id]['description'] = current_property['description']
-                self.results[property_id]['available_from'] = (datetime.datetime.now() - datetime.timedelta(
-                    days=current_property['availableFrom'])).strftime(
-                    '%m-%d-%Y %H:%M:%S.%f')
+                self.results[property_id]['platform'] = 'openrent'
+
+                # These keys are just mapped 1-2-1
+                simple_mapping = {
+                    'full_json': 'full_json',
+                    'title': 'title',
+                    'price': 'prices',
+                    'min_tenancy': 'minimumTenancy',
+                    'description': 'description',
+                    'room_type': 'propertyTypes',
+                    'bedrooms': 'bedrooms',
+                    'bathrooms': 'bathrooms',
+                    'image_url': 'imageurl'
+                }
+
+                # These values are given as bool: (0,1)
+                bool_vals_mapping = {
+                    'bills_included': 'bills',
+                    'has_garden': 'gardens',
+                    'student_friendly': 'students',
+                    'dss': 'dss',
+                    'fireplace': 'fireplaces',
+                    'parking': 'parkings',
+                    'video_viewings': 'videoViewingsAccepted',
+                    'pets': 'pets'
+                }
+
+                # Combine dicts (need Python 3.9+)
+                total_mapping = simple_mapping | bool_vals_mapping
+
+                # Iterate over every key to swap
+                for key, value in total_mapping.items():
+                    # Process the ones that are bools
+                    if key in bool_vals_mapping.keys():
+                        if current_property[value] == 0:
+                            self.results[property_id][key] = 'False'
+                        elif current_property[value] == 1:
+                            self.results[property_id][key] = 'True'
+                    # Process all the other ones
+                    else:
+                        self.results[property_id][key] = current_property[value]
+
+                self.results[property_id]['available_from'] = convert_date_to_standard(
+                            datetime.datetime.now() - datetime.timedelta(days=current_property['availableFrom']))
                 self.results[property_id][
                     'exact_location'] = f"{current_property['PROPERTYLISTLATITUDES']}, {current_property['PROPERTYLISTLONGITUDES']}".replace(' ', '')[:-1]
-                self.results[property_id]['google_maps_link'] = google_maps_link( self.results[property_id]['exact_location'])
-                if self.work_location is not None:
-                    self.results[property_id]['time_to_work_pub_trans'] = get_commute_time_tfl(start_loc= self.results[property_id]['exact_location'], end_loc=self.work_location)
-                self.results[property_id]['furnishing'] = str(bool(current_property['furnished']))
-                self.results[property_id]['has_garden'] = str(bool(current_property['gardens']))
-                self.results[property_id]['student_friendly'] = str(bool(current_property['students']))
-                self.results[property_id]['dss'] = str(bool(current_property['dss']))
-                self.results[property_id]['fireplace'] = str(bool(current_property['fireplaces']))
-                self.results[property_id]['parking'] = str(bool(current_property['parkings']))
-                self.results[property_id]['platform'] = 'openrent'
-                self.results[property_id]['last_updated'] = current_property['lastupdated']
-                self.results[property_id]['posted'] = (datetime.datetime.now() - datetime.timedelta(
-                    hours=current_property['hoursLive'])).strftime('%m-%d-%Y %H:%M:%S.%f')
+                self.results[property_id]['google_maps_link'] = google_maps_link(self.results[property_id]['exact_location'])
+                self.results[property_id]['last_updated'] = convert_time_ago_to_datetime(
+                    current_property['lastupdated'])
+                self.results[property_id]['posted'] = convert_time_ago_to_datetime(
+                    str(datetime.datetime.now() - datetime.timedelta(
+                        hours=current_property['hoursLive'])))
                 self.results[property_id]['url'] = openrent_id_to_link(property_id)
-                self.results[property_id]['image_url'] = current_property['imageurl']
-                self.results[property_id]['video_viewings'] = str(bool(current_property['videoViewingsAccepted']))
-                self.results[property_id]['room_type'] = current_property['propertyTypes']
-                self.results[property_id]['bedrooms'] = current_property['bedrooms']
-                self.results[property_id]['bathrooms'] = current_property['bathrooms']
-                self.results[property_id]['pets'] = str(bool(current_property['pets']))
+
+                if bool(current_property['furnished']) == True:
+                    self.results[property_id]['furnishing'] = 'Furnished'
+                elif bool(current_property['furnished']) == False:
+                    self.results[property_id]['furnishing'] = 'Unfurnished'
 
             elif current_property['islivelistBool'] == 0:
                 pass
                 # TODO: Check if the listing currently exists in the db and write the date it got let if so
                 # Or today's date if this is running on a regular schedule
 
-
     def main(self):
-        self.initial_search()
-        self.get_extra_details()
-        self.create_final_results()
+        self._initial_search()
+        self._get_extra_details()
+        self._create_final_results()
         self.save(self.results)
 
 # # Test
