@@ -1,7 +1,7 @@
 from databases.sqlite import SQLiteDatabase
 
 
-class RentalPlatform():
+class RentalPlatform:
     """
     Components that are shared across every rental platform (openrent, spare room etc.) during scraping/processing
     """
@@ -49,7 +49,7 @@ class RentalPlatform():
         # results should be saved in self.results as a dict of dict, with a copy of self.final_property_details per id
 
         # Save the results dict to self.final_property_details
-        self.results_dict()
+        self.full_results_dict()
         self.final_property_details = RentalPlatform.final_property_dict
 
         # Create database object to save the results to disk
@@ -57,8 +57,9 @@ class RentalPlatform():
 
     # Dict for the final results to ensure consistency, @classmethod so this dict can be copied without instantiating
     # an entire RentalPlatform object.
+    # TODO: a seperate dataclass might be better here
     @classmethod
-    def results_dict(cls):
+    def full_results_dict(cls):
         RentalPlatform.final_property_dict = {'id': 'unknown',
                                               'title': 'unknown',
                                               'price': 'unknown',

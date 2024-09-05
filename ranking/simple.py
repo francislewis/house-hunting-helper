@@ -2,6 +2,7 @@ from databases.sqlite import SQLiteDatabase
 from ranking import Ranking
 from tqdm import tqdm
 
+
 class SimpleRank(Ranking):
     """
     The ranking algorithm is to take relative position of the entry based on a mean of the relative price
@@ -9,6 +10,7 @@ class SimpleRank(Ranking):
     it (e.g. unfurnished)
     :return:
     """
+
     def __init__(self):
         # Create db object
         db = SQLiteDatabase()
@@ -20,7 +22,7 @@ class SimpleRank(Ranking):
 
         for id in tqdm(all_ids):
             property_details = db.fetch_data_by_id(id)
-            rank = (db.get_position(id)['price']/total_entries)
+            rank = (db.get_position(id)['price'] / total_entries)
 
             if property_details['bills_included'].lower() == 'True':
                 rank = rank * 1.1

@@ -7,7 +7,7 @@ from tqdm import tqdm
 import re
 from bs4 import BeautifulSoup
 from urllib.parse import urlencode
-from helper_funcs import spareroom_id_to_link, google_maps_link, convert_date_to_standard, \
+from utils.helper_funcs import spareroom_id_to_link, google_maps_link, convert_date_to_standard, \
     find_key
 
 

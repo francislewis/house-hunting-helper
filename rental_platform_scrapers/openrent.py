@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 from collections import OrderedDict
 from urllib.parse import urlencode
-from helper_funcs import openrent_id_to_link, google_maps_link, convert_date_to_standard, convert_time_ago_to_datetime
+from utils.helper_funcs import openrent_id_to_link, google_maps_link, convert_date_to_standard, convert_time_ago_to_datetime
 
 
 class OpenRent(RentalPlatform):

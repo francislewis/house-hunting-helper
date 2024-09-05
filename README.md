@@ -6,6 +6,8 @@ This is still **very much a work in progress** but I thought I'd open source it 
 
 
  ### Immediate Plan:
+- Allow for more minimal data collection with key features:
+  - Link/id, price per month, number of beds, location (post code?), first seen/available, last seen/not available.
 - Add some extra searches to try and fill in all of the possible information (I think it'll have to involve scraping individual web pages directly)
   - Should complete the scraping side so the data is good
 - Add in a scheduler so I can run a set query on schedule with a flag or something and collect data

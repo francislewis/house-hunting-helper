@@ -1,10 +1,12 @@
 from databases import Database
 import sqlite3
 
+
 class SQLiteDatabase(Database):
     """
     SQLite Database Class. Each object can be attached to a single database file/location.
     """
+
     def __init__(self, empty_results_dict=None, table_name='properties', file_path='saved_properties.db'):
         self.file_path = file_path
         if empty_results_dict is not None:
@@ -46,7 +48,7 @@ class SQLiteDatabase(Database):
         conn.commit()
         conn.close()
 
-    def insert_data_into_table(self, data_dict, table_name = 'properties'):
+    def insert_data_into_table(self, data_dict, table_name='properties'):
         """
         Saves a Python dict to an SQLite database table, each key in the dict corresponds to a column heading.
         This schema is set up on object instantiation - i.e. self.__init__()
@@ -246,7 +248,6 @@ class SQLiteDatabase(Database):
 
         return int(count)
 
-
     def update_column_by_id(self, id, column_name, new_value, table_name='properties'):
         """
         Update a single value in an SQLite table by specifying the 'id' (row) and 'column_name' (col)
@@ -269,7 +270,3 @@ class SQLiteDatabase(Database):
         # print(f'Column "{column_name}" updated for row with id {id}.')
 
         conn.close()
-
-
-
-
